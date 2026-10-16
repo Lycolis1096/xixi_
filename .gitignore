@@ -16,3 +16,6 @@ venv/
 .workbuddy/
 .vscode/
 .idea/
+
+# bundle 导出产物
+*.bundle
