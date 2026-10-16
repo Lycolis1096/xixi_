@@ -1,0 +1,18 @@
+# 打包产物（可用 make_share.py 重新生成）
+分享版/
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# 运行期日志
+*.log
+
+# 编辑器 / 工具
+.workbuddy/
+.vscode/
+.idea/
