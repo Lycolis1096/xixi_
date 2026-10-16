@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汐汐小桌宠</title>
+<style>
+  :root{
+    --cyan:#2ec4d9;
+    --cyan-deep:#0e9bb5;
+    --coral:#f0705f;
+    --navy:#22304f;
+    --ink:#3a4763;
+    --paper:#ffffff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;}
+  html,body{width:100%;height:100%;overflow:hidden;}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    background:linear-gradient(160deg,#eaf4fa 0%,#e2eef7 45%,#fdf2ec 100%);
+  }
+  /* 桌面模式：透明背景，让桌宠悬浮在桌面上 */
+  body.desktop{background:transparent;}
+
+  /* ============ 舞台 ============ */
+  #stage{
+    position:absolute;
+    width:420px;
+    height:560px;
+    right:24px;
+    bottom:8px;
+    touch-action:none;
+    transform-origin:100% 100%;
+  }
+  /* 桌面模式：舞台铺满窗口（左上角对齐，配合缩放从左上角生长） */
+  body.desktop #stage{
+    left:0;top:0;right:auto;bottom:auto;
+    transform-origin:0 0;
+  }
+
+  /* ============ 气泡 ============ */
+  #bubble{
+    position:absolute;
+    top:8px;
+    left:50%;
+    transform:translateX(-50%) scale(0);
+    transform-origin:bottom center;
+    max-width:300px;
+    min-height:38px;
+    background:var(--paper);
+    border:2px solid var(--cyan);
+    border-radius:16px;
+    padding:9px 14px;
+    font-size:14px;
+    line-height:1.5;
+    color:var(--ink);
+    box-shadow:0 6px 18px rgba(34,48,79,.14);
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1),opacity .18s;
+    opacity:0;
+    z-index:30;
+    pointer-events:none;
+    white-space:pre-wrap;
+    text-align:center;
+  }
+  #bubble.show{transform:translateX(-50%) scale(1);opacity:1;}
+  #bubble::after{
+    content:"";
+    position:absolute;
+    bottom:-9px;
+    left:50%;
+    transform:translateX(-50%);
+    border:5px solid transparent;
+    border-top:8px solid var(--cyan);
+  }
+  #bubble .cursor{display:inline-block;width:2px;height:14px;background:var(--cyan);margin-left:2px;vertical-align:-2px;animation:blink .7s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* ============ 人物 ============ */
+  #character{
+    position:absolute;
+    left:50%;
+    bottom:64px;
+    transform:translateX(-50%);
+    width:340px;
+    cursor:grab;
+    z-index:10;
+    filter:drop-shadow(0 10px 16px rgba(34,48,79,.18));
+  }
+  #character.dragging{cursor:grabbing;}
+  #xixi{
+    display:block;
+    width:100%;
+    pointer-events:none;
+    transform-origin:50% 90%;
+  }
+  /* 待机呼吸 */
+  #character.idle #xixi{animation:breathe 3.2s ease-in-out infinite;}
+  @keyframes breathe{
+    0%,100%{transform:translateY(0) scale(1);}
+    50%{transform:translateY(-7px) scale(1.015);}
+  }
+  /* 摸头：挤压 + 微歪 */
+  #character.patting #xixi{animation:squish .5s ease-in-out infinite alternate;}
+  @keyframes squish{
+    from{transform:scale(1.03,.94) rotate(-1.2deg);}
+    to  {transform:scale(.985,1.03) rotate(1.2deg);}
+  }
+  /* 开心跳 */
+  #character.happy #xixi{animation:hop .5s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes hop{
+    0%{transform:translateY(0) scale(1);}
+    40%{transform:translateY(-26px) scale(1.05,.95);}
+    70%{transform:translateY(0) scale(.96,1.05);}
+    100%{transform:translateY(0) scale(1);}
+  }
+  /* 进食：小口咀嚼 */
+  #character.eating #xixi{animation:chomp .22s ease-in-out 4;}
+  @keyframes chomp{
+    0%,100%{transform:scale(1,1);}
+    50%{transform:scale(1.02,.97) translateY(2px);}
+  }
+  /* 思考歪头 */
+  #character.thinking #xixi{animation:tilt .6s ease-in-out infinite alternate;}
+  @keyframes tilt{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(-4deg) translateX(-4px);}
+  }
+  /* 难过 */
+  #character.sad #xixi{filter:saturate(.82) brightness(.985);}
+  #character.sad.idle #xixi{animation:breatheSad 3.6s ease-in-out infinite;}
+  @keyframes breatheSad{
+    0%,100%{transform:translateY(0) scale(1);}
+    50%{transform:translateY(-3px) scale(.995);}
+  }
+  /* 睡着 */
+  #character.asleep #xixi{animation:sleep 4s ease-in-out infinite;}
+  @keyframes sleep{
+    0%,100%{transform:translateY(4px) scale(1.01,.99) rotate(1.5deg);}
+    50%{transform:translateY(5px) scale(1.015,.985) rotate(-1deg);}
+  }
+
+  /* 头部抚摸热区 */
+  #head-zone{
+    position:absolute;
+    left:21%;
+    top:3%;
+    width:58%;
+    height:20%;
+    cursor:pointer;
+    z-index:12;
+    border-radius:40% 40% 30% 30%;
+  }
+  #head-zone:hover{background:radial-gradient(ellipse at 50% 60%,rgba(46,196,217,.12),transparent 70%);}
+  #head-zone:active{background:radial-gradient(ellipse at 50% 60%,rgba(240,112,95,.18),transparent 70%);}
+
+  /* ============ 底部操作栏（状态 + 按钮） ============ */
+  #bottom-bar{
+    position:absolute;
+    left:50%;
+    bottom:12px;
+    transform:translateX(-50%);
+    display:flex;
+    align-items:center;
+    gap:12px;
+    opacity:.55;
+    transition:opacity .25s;
+    z-index:20;
+    white-space:nowrap;
+  }
+  #stage:hover #bottom-bar{opacity:1;}
+  #status{display:flex;flex-direction:column;gap:4px;}
+  .meter{display:flex;align-items:center;gap:5px;}
+  .meter .ico{font-size:12px;width:15px;text-align:center;}
+  .meter .bar{
+    width:44px;height:6px;
+    background:rgba(34,48,79,.15);
+    border-radius:99px;
+    overflow:hidden;
+  }
+  .meter .fill{
+    height:100%;width:100%;
+    border-radius:99px;
+    transition:width .5s ease;
+  }
+  .meter.full .fill{background:linear-gradient(90deg,#ffd166,#f4a259);}
+  .meter.mood .fill{background:linear-gradient(90deg,#ff8fa3,#f0705f);}
+
+  #controls{display:flex;gap:8px;}
+  .btn{
+    border:none;
+    outline:none;
+    cursor:pointer;
+    font-family:inherit;
+    font-size:12px;
+    color:#fff;
+    background:linear-gradient(135deg,var(--cyan),var(--cyan-deep));
+    border-radius:999px;
+    padding:6px 12px;
+    box-shadow:0 4px 12px rgba(14,155,181,.35);
+    transition:transform .15s,box-shadow .15s,filter .15s;
+    display:flex;align-items:center;gap:4px;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 7px 16px rgba(14,155,181,.42);}
+  .btn:active{transform:translateY(0) scale(.95);}
+  .btn.coral{background:linear-gradient(135deg,#f4826f,var(--coral));box-shadow:0 4px 12px rgba(240,112,95,.35);}
+  .btn.coral:hover{box-shadow:0 7px 16px rgba(240,112,95,.42);}
+  .btn.ghost{background:rgba(255,255,255,.85);color:var(--ink);box-shadow:0 3px 10px rgba(34,48,79,.15);}
+  .btn:disabled{filter:grayscale(.6);opacity:.6;cursor:not-allowed;transform:none;}
+
+  /* ============ 聊天输入 ============ */
+  #chatbox{
+    position:absolute;
+    left:50%;
+    bottom:54px;
+    transform:translateX(-50%) translateY(8px);
+    display:flex;
+    gap:8px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s,transform .2s;
+    z-index:25;
+  }
+  #chatbox.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+  #chat-input{
+    width:210px;
+    border:2px solid var(--cyan);
+    border-radius:999px;
+    padding:7px 14px;
+    font-size:13px;
+    font-family:inherit;
+    color:var(--ink);
+    background:#fff;
+    outline:none;
+    box-shadow:0 4px 12px rgba(34,48,79,.12);
+  }
+  #chat-input::placeholder{color:#9fb0c8;}
+
+  /* 关闭按钮 */
+  #btn-close{
+    position:absolute;
+    top:8px;right:8px;
+    width:22px;height:22px;
+    border:none;border-radius:50%;
+    background:rgba(255,255,255,.85);
+    color:var(--ink);
+    font-size:12px;
+    cursor:pointer;
+    opacity:.5;
+    transition:opacity .25s;
+    z-index:40;
+    box-shadow:0 2px 8px rgba(34,48,79,.15);
+  }
+  #btn-close:hover{opacity:1;background:#fff;color:var(--coral);}
+
+  /* 缩放提示 */
+  #scale-toast{
+    position:absolute;
+    top:36px;right:8px;
+    background:rgba(34,48,79,.78);
+    color:#fff;
+    font-size:11px;
+    border-radius:999px;
+    padding:3px 10px;
+    opacity:0;
+    transition:opacity .2s;
+    z-index:40;
+    pointer-events:none;
+  }
+  #scale-toast.show{opacity:1;}
+
+  /* 唤回按钮（关闭后） */
+  #recall{
+    position:absolute;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%) scale(0);
+    transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+    z-index:50;
+  }
+  #recall.show{transform:translate(-50%,-50%) scale(1);}
+
+  /* ============ 粒子 ============ */
+  .particle{
+    position:absolute;
+    pointer-events:none;
+    z-index:35;
+    font-size:18px;
+    animation:floatUp 1.1s ease-out forwards;
+  }
+  @keyframes floatUp{
+    0%{transform:translateY(0) scale(.6);opacity:0;}
+    15%{opacity:1;transform:translateY(-8px) scale(1.1);}
+    100%{transform:translateY(-64px) scale(1);opacity:0;}
+  }
+  .food{
+    position:absolute;
+    z-index:15;
+    font-size:26px;
+    pointer-events:none;
+    filter:drop-shadow(0 3px 5px rgba(34,48,79,.25));
+    transition:top .5s cubic-bezier(.55,.06,.68,.19),transform .5s;
+  }
+  .food.land{transform:scale(.6) translateY(10px);opacity:0;transition:all .12s;}
+  .crumb{
+    position:absolute;
+    z-index:36;
+    font-size:12px;
+    pointer-events:none;
+    animation:crumbFly .7s ease-out forwards;
+  }
+  @keyframes crumbFly{
+    0%{transform:translate(0,0) scale(1);opacity:1;}
+    100%{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0;}
+  }
+
+  /* 浏览器模式下的提示卡片 */
+  #hint{
+    position:absolute;
+    left:18px;top:14px;
+    background:rgba(255,255,255,.82);
+    backdrop-filter:blur(6px);
+    border:1px solid rgba(46,196,217,.35);
+    border-radius:14px;
+    padding:10px 14px;
+    font-size:12px;
+    color:var(--ink);
+    line-height:1.7;
+    max-width:230px;
+    box-shadow:0 6px 18px rgba(34,48,79,.10);
+    z-index:5;
+  }
+  body.desktop #hint{display:none;}
+  #hint b{color:var(--cyan-deep);}
+</style>
+</head>
+<body>
+
+<div id="hint">
+  <b>汐汐小桌宠</b><br>
+  🖱️ 按住<b>脑袋</b>可以 rua 头<br>
+  🖱️ 按住<b>身体</b>可以拖动她<br>
+  🖐️ 滚轮可以放大 / 缩小<br>
+  🍰 投喂 · 💬 聊聊 · 摸摸头<br>
+  想让她出现在桌面上？运行「启动桌宠.bat」
+</div>
+
+<div id="stage">
+  <div id="bubble"></div>
+
+  <div id="character" class="idle">
+    <img id="xixi" src="xixi.png" alt="汐汐" draggable="false">
+    <div id="head-zone" title="摸摸头"></div>
+  </div>
+
+  <div id="chatbox">
+    <input id="chat-input" type="text" placeholder="和汐汐说点什么…" maxlength="40">
+  </div>
+
+  <div id="bottom-bar">
+    <div id="status">
+      <div class="meter full"><span class="ico">🍖</span><div class="bar"><div class="fill" id="fill-full"></div></div></div>
+      <div class="meter mood"><span class="ico">💗</span><div class="bar"><div class="fill" id="fill-mood"></div></div></div>
+    </div>
+    <div id="controls">
+      <button class="btn coral" id="btn-pat">🖐️ 摸摸头</button>
+      <button class="btn" id="btn-feed">🍰 投喂</button>
+      <button class="btn" id="btn-chat">💬 聊聊</button>
+      <button class="btn ghost" id="btn-sound">🔊</button>
+    </div>
+  </div>
+
+  <button id="btn-close" title="汐汐去休息">✕</button>
+  <div id="scale-toast">100%</div>
+
+  <button class="btn coral" id="recall">✨ 唤回汐汐</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const stage=$("stage"), character=$("character"), headZone=$("head-zone"),
+        bubble=$("bubble"), chatbox=$("chatbox"), chatInput=$("chat-input"),
+        btnPat=$("btn-pat"), btnFeed=$("btn-feed"), btnChat=$("btn-chat"),
+        btnSound=$("btn-sound"), btnClose=$("btn-close"), recall=$("recall"),
+        scaleToast=$("scale-toast"),
+        fillFull=$("fill-full"), fillMood=$("fill-mood");
+
+  /* ================= 桌面模式识别 ================= */
+  let desktopMode = new URLSearchParams(location.search).get("mode") === "desktop";
+  function markDesktop(){
+    desktopMode = true;
+    document.body.classList.add("desktop");
+  }
+  if(desktopMode) markDesktop();
+  if(window.pywebview) markDesktop();
+  window.addEventListener("pywebviewready", function(){
+    markDesktop();
+    try{ if(window.pywebview && window.pywebview.api) window.pywebview.api.ready(); }catch(e){}
+  });
+  const hasApi = () => desktopMode && window.pywebview && window.pywebview.api;
+
+  /* ================= 状态 ================= */
+  const state = {
+    fullness: 78,      // 饱食度 0-100
+    mood: 82,          // 心情 0-100
+    lastInteract: Date.now(),
+    asleep: false,
+    patCount: 0,
+    feedCd: false,
+    chatOpen: false,
+    sound: true
+  };
+
+  /* ================= 音效（WebAudio 合成，无外部文件） ================= */
+  let audioCtx=null;
+  function beep(freq,dur,type,vol){
+    if(!state.sound) return;
+    try{
+      audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type=type||"sine"; o.frequency.value=freq;
+      g.gain.setValueAtTime(vol||.08, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime+dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime+dur);
+    }catch(e){}
+  }
+  const sfx = {
+    pat(){ beep(520+Math.random()*160,.09,"sine",.06); },
+    feed(){ beep(300,.07,"square",.05); setTimeout(()=>beep(240,.09,"square",.05),90); },
+    chat(){ beep(660,.07,"triangle",.06); },
+    pop(){ beep(440,.06,"sine",.05); }
+  };
+
+  /* ================= 台词库 ================= */
+  const LINES = {
+    patLight:["唔…？","喵？","怎么啦？","……戳到我啦。","（歪头）"],
+    patLong:["喵呜～……好舒服。","头发要乱了啦！笨蛋……","再、再摸一会儿也可以啦。","嘿嘿，好痒……","汐汐的帽子不许摘哦！"],
+    feed:["吧唧吧唧……谢谢投喂！","呜哇，是这个！好开心！","喵呜…投喂值班日快乐！","（嚼嚼）…还要！","肚子暖暖的，谢谢你～"],
+    feedFull:["吃不下了啦……肚子好撑。","已经饱饱的了喵～"],
+    hungry:["肚子…在叫了。","有吃的吗……？","咕噜咕噜……","有点没力气了……"],
+    greet:["你来啦！今天也要开心喵。","汐汐在这里等你哦。","呜…是你就好。","注意到我啦？嘿嘿。"],
+    chatFood:["想吃鱼！……或者蛋糕。","你吃饭了吗？要好好吃饭哦。","投喂我投喂我！（举手）"],
+    chatPat:["头…给你摸一下下哦。","帽子下面是秘密！","摸头会长高……真的吗？"],
+    chatName:["我是汐汐！卡拉彼丘的汐汐！","汐汐汐～记住没！","耳朵是真的！…大概。"],
+    chatLike:["诶？！……喜、喜欢吗？","喵呜……❤","说这种话……不害臊吗……"],
+    chatMood:["现在心情还不错喵。","只要你来，心情就很好。","有点困了……但还能陪你。"],
+    chatBye:["要走了吗……路上小心。","再见喵！会想你的。","下次再来玩哦！"],
+    idle:["今天天气真好喵。","你在干嘛呀？","嘀嘀咕咕……","（盯着你看）","要摸摸头吗？","喵～","发呆了很久了哦。"],
+    idleHungry:["（捂着肚子）……","好想吃东西……","有零食的味道吗？"],
+    sleep:["Zzz……","（睡着了，发出小小的呼吸声）"],
+    wake:["…！醒了醒了，没睡没睡。","喵呜……睡迷糊了。"],
+    closeBye:["那汐汐先去休息了……","晚安喵。","要记得想我哦！"]
+  };
+  const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+
+  /* ================= 气泡 ================= */
+  let bubbleTimer=null, typeTimer=null;
+  function say(text, hold){
+    clearTimeout(bubbleTimer); clearTimeout(typeTimer);
+    bubble.innerHTML = "";
+    bubble.classList.add("show");
+    let i=0;
+    const cursor=document.createElement("span");
+    cursor.className="cursor";
+    const write=()=>{
+      if(i<text.length){
+        bubble.textContent = text.slice(0,++i);
+        bubble.appendChild(cursor);
+        typeTimer=setTimeout(write, 45);
+      }else{
+        if(cursor.parentNode) bubble.removeChild(cursor);
+        bubbleTimer=setTimeout(()=>bubble.classList.remove("show"), hold||2600);
+      }
+    };
+    write();
+  }
+  function quickSay(text){ say(text, 1800); }
+
+  /* ================= 动画状态 ================= */
+  function anim(cls, ms){
+    character.classList.remove("idle","patting","happy","eating","thinking","asleep");
+    character.classList.add(cls);
+    setTimeout(()=>{
+      character.classList.remove(cls);
+      character.classList.add("idle");
+    }, ms);
+  }
+
+  /* ================= 粒子 ================= */
+  function spawnHearts(n){
+    const w = stage.clientWidth;
+    for(let i=0;i<n;i++){
+      setTimeout(()=>{
+        const p=document.createElement("div");
+        p.className="particle";
+        p.textContent = pick(["❤️","💕","💖","✨","💗"]);
+        p.style.left = (w/2 + (Math.random()*90-45)) + "px";
+        p.style.top  = (110 + Math.random()*40) + "px";
+        stage.appendChild(p);
+        setTimeout(()=>p.remove(), 1200);
+      }, i*110);
+    }
+  }
+  function spawnCrumbs(){
+    const w = stage.clientWidth;
+    for(let i=0;i<8;i++){
+      const c=document.createElement("div");
+      c.className="crumb";
+      c.textContent = pick(["✨","⭐","🍃","・"]);
+      c.style.left = (w/2 + (Math.random()*50-25)) + "px";
+      c.style.top  = (285 + Math.random()*20) + "px";
+      c.style.setProperty("--dx",(Math.random()*70-35)+"px");
+      c.style.setProperty("--dy",(-30-Math.random()*40)+"px");
+      stage.appendChild(c);
+      setTimeout(()=>c.remove(), 750);
+    }
+  }
+  function spawnZzz(){
+    const p=document.createElement("div");
+    p.className="particle";
+    p.textContent="💤";
+    p.style.left=(stage.clientWidth/2+70)+"px";
+    p.style.top="130px";
+    p.style.fontSize="22px";
+    stage.appendChild(p);
+    setTimeout(()=>p.remove(),1200);
+  }
+
+  /* ================= 摸摸头 ================= */
+  let patting=false, patStart=0, patHeartTimer=null;
+  function startPat(){
+    if(patting) return;
+    patting=true; patStart=Date.now();
+    state.lastInteract=Date.now();
+    wakeIfAsleep();
+    character.classList.remove("idle","happy","eating","thinking","asleep","sad");
+    character.classList.add("patting");
+    sfx.pat();
+    spawnHearts(2);
+    patHeartTimer=setInterval(()=>spawnHearts(1), 260);
+  }
+  function endPat(){
+    if(!patting) return;
+    patting=false;
+    clearInterval(patHeartTimer);
+    const dur=Date.now()-patStart;
+    state.patCount++;
+    state.mood=Math.min(100,state.mood+Math.min(12,dur/120));
+    if(dur>1100){
+      say(pick(LINES.patLong));
+      spawnHearts(4);
+    }else{
+      quickSay(pick(LINES.patLight));
+      spawnHearts(2);
+    }
+    character.classList.remove("patting");
+    character.classList.add("idle");
+    updateMood();
+  }
+  headZone.addEventListener("mousedown", e=>{ e.preventDefault(); e.stopPropagation(); startPat(); });
+  headZone.addEventListener("touchstart", e=>{ e.preventDefault(); startPat(); }, {passive:false});
+  window.addEventListener("mouseup", endPat);
+  window.addEventListener("touchend", endPat);
+  btnPat.addEventListener("click", ()=>{
+    startPat();
+    setTimeout(endPat, 900);
+  });
+
+  /* ================= 投喂 ================= */
+  const FOODS=["🍰","🐟","🍙","🥮","🍓","🧋","🍡","🦐"];
+  function feed(){
+    if(state.feedCd) return;
+    state.feedCd=true;
+    btnFeed.disabled=true;
+    state.lastInteract=Date.now();
+    wakeIfAsleep();
+    sfx.feed();
+    const w = stage.clientWidth;
+    const f=document.createElement("div");
+    f.className="food";
+    f.textContent=pick(FOODS);
+    f.style.left=(w/2-13+(Math.random()*40-20))+"px";
+    f.style.top="-40px";
+    stage.appendChild(f);
+    requestAnimationFrame(()=>{ f.style.top="288px"; });
+    setTimeout(()=>{
+      f.classList.add("land");
+      setTimeout(()=>f.remove(),150);
+      spawnCrumbs();
+      character.classList.remove("idle","patting","thinking","asleep","sad");
+      character.classList.add("eating");
+      if(state.fullness>86){
+        state.mood=Math.min(100,state.mood+6);
+        quickSay(pick(LINES.feedFull));
+      }else{
+        state.fullness=Math.min(100,state.fullness+34);
+        state.mood=Math.min(100,state.mood+9);
+        say(pick(LINES.feed),2200);
+      }
+      updateMood();
+      setTimeout(()=>{
+        character.classList.remove("eating");
+        character.classList.add("idle");
+      },900);
+      setTimeout(()=>{ state.feedCd=false; btnFeed.disabled=false; }, 1100);
+    }, 520);
+  }
+  btnFeed.addEventListener("click", feed);
+
+  /* ================= 聊聊 ================= */
+  btnChat.addEventListener("click", ()=>{
+    state.lastInteract=Date.now();
+    wakeIfAsleep();
+    chatbox.classList.toggle("show");
+    state.chatOpen=chatbox.classList.contains("show");
+    if(state.chatOpen) setTimeout(()=>chatInput.focus(),100);
+    else chatInput.blur();
+  });
+  chatInput.addEventListener("keydown", e=>{
+    if(e.key!=="Enter") return;
+    const text=chatInput.value.trim();
+    chatInput.value="";
+    if(!text) return;
+    reply(text);
+  });
+  function reply(text){
+    state.lastInteract=Date.now();
+    wakeIfAsleep();
+    sfx.chat();
+    character.classList.remove("idle","patting","happy","eating","asleep","sad");
+    character.classList.add("thinking");
+    say("……", 900);
+    setTimeout(()=>{
+      character.classList.remove("thinking");
+      character.classList.add("idle");
+      let line=null;
+      if(/吃|饿|饭|食|粮|鱼|蛋糕|零食/.test(text)) line=pick(LINES.chatFood);
+      else if(/头|摸|rua|摸头|头发|帽子/.test(text)) line=pick(LINES.chatPat);
+      else if(/名字|是谁|谁|叫什么/.test(text)) line=pick(LINES.chatName);
+      else if(/喜欢|爱|老婆|贴贴|亲/.test(text)){ line=pick(LINES.chatLike); state.mood=Math.min(100,state.mood+7); }
+      else if(/心情|开心|高兴|怎么样|好吗/.test(text)) line=pick(LINES.chatMood);
+      else if(/再见|拜拜|晚安|走了|bye/.test(text)) line=pick(LINES.chatBye);
+      else if(/你好|嗨|hi|hello|早|晚上好/.test(text)) line=pick(LINES.greet);
+      else if(state.fullness<28) line=pick(LINES.hungry);
+      else line=pick(LINES.idle);
+      say(line);
+      state.mood=Math.min(100,state.mood+2);
+      updateMood();
+    }, 650);
+  }
+
+  /* ================= 缩放（滚轮） ================= */
+  let petScale = 1;
+  let resizeTimer = null, scaleToastTimer = null;
+  function applyTransform(){
+    stage.style.transform = "translate(" + visX + "px," + visY + "px) scale(" + petScale + ")";
+  }
+  function setScale(s){
+    petScale = Math.round(Math.max(0.5, Math.min(2, s)) * 100) / 100;
+    applyTransform();
+    scaleToast.textContent = Math.round(petScale*100) + "%";
+    scaleToast.classList.add("show");
+    clearTimeout(scaleToastTimer);
+    scaleToastTimer = setTimeout(()=>scaleToast.classList.remove("show"), 900);
+    if(desktopMode){
+      // 节流后同步操作系统窗口大小（舞台设计尺寸 420x560）
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(()=>{
+        const api = window.pywebview && window.pywebview.api;
+        if(api){
+          try{ api.on_resize(Math.round(420*petScale), Math.round(560*petScale)); }catch(e){}
+        }
+      }, 150);
+    }
+  }
+  stage.addEventListener("wheel", e=>{
+    e.preventDefault();
+    state.lastInteract=Date.now();
+    wakeIfAsleep();
+    setScale(petScale + (e.deltaY > 0 ? -0.08 : 0.08));
+  }, {passive:false});
+
+  /* ================= 拖动 ================= */
+  let dragging=false, dragMoved=false;
+  let lastX=0, lastY=0;
+  let visX=0, visY=0;          // 舞台视觉偏移
+  let winDX=0, winDY=0;        // 桌面模式：待发送给窗口的增量
+  let baseRect=null;
+
+  character.addEventListener("mousedown", e=>{
+    if(patting) return;
+    dragging=true; dragMoved=false;
+    lastX=e.clientX; lastY=e.clientY;
+    baseRect = stage.getBoundingClientRect();
+    character.classList.add("dragging");
+    state.lastInteract=Date.now();
+    if(desktopMode) requestAnimationFrame(desktopDragTick);
+  });
+
+  window.addEventListener("mousemove", e=>{
+    if(!dragging) return;
+    const dx=e.clientX-lastX, dy=e.clientY-lastY;
+    if(Math.abs(dx)+Math.abs(dy)>2) dragMoved=true;
+    lastX=e.clientX; lastY=e.clientY;
+    visX += dx; visY += dy;
+    if(desktopMode){
+      // 桌面：先视觉瞬移，窗口随后跟（rAF 节流，丝滑不卡）
+      winDX += dx; winDY += dy;
+      applyTransform();
+    }else{
+      // 浏览器：页面内移动并限制在视口内
+      clampVisual();
+      applyTransform();
+    }
+  });
+
+  function desktopDragTick(){
+    if(!dragging) return;
+    if(winDX!==0 || winDY!==0){
+      const api = window.pywebview && window.pywebview.api;
+      if(api){
+        try{ api.on_drag(winDX, winDY); }catch(e){}
+        visX -= winDX; visY -= winDY;   // 窗口已移动，抵消视觉偏移
+        winDX = 0; winDY = 0;
+        applyTransform();
+      }
+    }
+    requestAnimationFrame(desktopDragTick);
+  }
+
+  function clampVisual(){
+    if(!baseRect) return;
+    const w = baseRect.width * petScale, h = baseRect.height * petScale;
+    const minX = -baseRect.left, maxX = window.innerWidth - baseRect.left - w;
+    const minY = -baseRect.top,  maxY = window.innerHeight - baseRect.top - h;
+    visX = Math.max(minX, Math.min(maxX, visX));
+    visY = Math.max(minY, Math.min(maxY, visY));
+  }
+
+  window.addEventListener("mouseup", ()=>{
+    if(!dragging) return;
+    dragging=false;
+    character.classList.remove("dragging");
+    if(desktopMode){
+      // 冲刷剩余增量，重置视觉偏移
+      if(winDX!==0 || winDY!==0){
+        const api = window.pywebview && window.pywebview.api;
+        if(api){ try{ api.on_drag(winDX, winDY); }catch(e){} }
+        winDX = 0; winDY = 0;
+      }
+      visX = 0; visY = 0;
+      applyTransform();
+    }
+    if(!dragMoved && !patting){
+      sfx.pop();
+      quickSay(pick(LINES.greet));
+      state.mood=Math.min(100,state.mood+3);
+      updateMood();
+    }
+  });
+
+  /* ================= 睡觉 / 唤醒 ================= */
+  function wakeIfAsleep(){
+    if(state.asleep){
+      state.asleep=false;
+      character.classList.remove("asleep");
+      character.classList.add("idle");
+      quickSay(pick(LINES.wake));
+    }
+  }
+  setInterval(()=>{
+    if(Date.now()-state.lastInteract>75000 && !state.asleep){
+      state.asleep=true;
+      character.classList.remove("idle","patting","happy","eating","thinking","sad");
+      character.classList.add("asleep");
+      say(pick(LINES.sleep), 4000);
+    }
+    if(state.asleep) spawnZzz();
+  }, 5000);
+
+  /* =================  idle闲聊 ================= */
+  setInterval(()=>{
+    if(state.asleep || dragging || patting || state.chatOpen) return;
+    if(Date.now()-state.lastInteract<9000) return;
+    if(Math.random()<0.5){
+      if(state.fullness<30) say(pick(LINES.idleHungry),2400);
+      else say(pick(LINES.idle),2400);
+      state.lastInteract=Date.now();
+    }
+  }, 9000);
+
+  /* ================= 饱食度衰减 ================= */
+  setInterval(()=>{
+    state.fullness=Math.max(0,state.fullness-1.6);
+    state.mood=Math.max(0,state.mood-0.8);
+    if(state.fullness<25 && !state.asleep && Math.random()<0.35){
+      quickSay(pick(LINES.hungry));
+      state.lastInteract=Date.now();
+    }
+    updateMood();
+  }, 9000);
+
+  function updateMood(){
+    fillFull.style.width=state.fullness+"%";
+    fillMood.style.width=state.mood+"%";
+    const sad = state.fullness<25 || state.mood<25;
+    character.classList.toggle("sad", sad && !patting && !state.asleep && !dragging);
+  }
+
+  /* ================= 声音开关 ================= */
+  btnSound.addEventListener("click", ()=>{
+    state.sound=!state.sound;
+    btnSound.textContent=state.sound?"🔊":"🔇";
+    if(state.sound) sfx.pop();
+    quickSay(state.sound?"（打开声音）":"（静音模式）");
+  });
+
+  /* ================= 关闭 / 唤回 ================= */
+  btnClose.addEventListener("click", ()=>{
+    say(pick(LINES.closeBye),2200);
+    sfx.pop();
+    setTimeout(()=>{
+      stage.style.transition="opacity .5s, transform .5s";
+      stage.style.opacity="0";
+      visX=0; visY=0;
+      stage.style.transform="translate(0px,0px) scale(.85)";
+      setTimeout(()=>{
+        stage.style.display="none";
+        recall.classList.add("show");
+      },500);
+    }, 1400);
+  });
+  recall.addEventListener("click", ()=>{
+    recall.classList.remove("show");
+    stage.style.display="";
+    requestAnimationFrame(()=>{
+      stage.style.opacity="1";
+      stage.style.transform="translate(" + visX + "px," + visY + "px) scale(" + petScale + ")";
+    });
+    sfx.pop();
+    setTimeout(()=>quickSay("汐汐回来啦！"),300);
+  });
+
+  /* ================= 初始化 ================= */
+  updateMood();
+  setTimeout(()=>quickSay("你好喵，我是汐汐！摸摸我的头，滚轮可以放大缩小～"), 800);
+})();
+</script>
+</body>
+</html>
