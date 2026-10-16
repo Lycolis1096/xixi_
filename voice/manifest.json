@@ -1,0 +1,80 @@
+{
+  "greet": {
+    "cn_file": "Cielle_BPCHAR_018_CN.mp3",
+    "cn_text": "老板好，我叫汐，头脑灵活技术全面价格公道，不管你从哪里认识的我，要不要先下单试试我的水平？",
+    "jp_file": "Cielle_BPCHAR_018_JP.mp3",
+    "jp_text": "やっほー!アーシは汐!頭切れて腕もピカイチ!あと値段も良心的!どう?お試しで雇ってみる?"
+  },
+  "hello": {
+    "cn_file": "Cielle_COM_089_CN.mp3",
+    "cn_text": "你好",
+    "jp_file": "Cielle_COM_089_JP.mp3",
+    "jp_text": "やっほー!"
+  },
+  "pat": {
+    "cn_file": "Cielle_BPCHAR_067_CN.mp3",
+    "cn_text": "嘿嘿嘿，老板真有眼光，这趟包你平安",
+    "jp_file": "Cielle_BPCHAR_067_JP.mp3",
+    "jp_text": "やっほー!アーシを選ぶとかセンスあるじゃん!"
+  },
+  "feed": {
+    "cn_file": "Cielle_COM_084_CN.mp3",
+    "cn_text": "大好人，谢谢你",
+    "jp_file": "Cielle_COM_084_JP.mp3",
+    "jp_text": "ありがとう!マジ助かった!"
+  },
+  "happy": {
+    "cn_file": "Cielle_BPCHAT_138_CN.mp3",
+    "cn_text": "哼，赢了！奖金到手！",
+    "jp_file": "Cielle_BPCHAT_138_JP.mp3",
+    "jp_text": "勝利!ボーナスもらえ!"
+  },
+  "sad": {
+    "cn_file": "Cielle_BPCHAT_137_c_CN.mp3",
+    "cn_text": "这点佣金我可不玩命，溜了溜了",
+    "jp_file": "Cielle_BPCHAT_137_c_JP.mp3",
+    "jp_text": "無理無理コスパ悪すぎもう帰る"
+  },
+  "idle1": {
+    "cn_file": "Cielle_BPCHAR_068_CN.mp3",
+    "cn_text": "啊，希望今天的工作可以轻松一点",
+    "jp_file": "Cielle_BPCHAR_068_JP.mp3",
+    "jp_text": "今日の仕事楽だといいなぁ"
+  },
+  "idle2": {
+    "cn_file": "Cielle_BPCHAR_069_CN.mp3",
+    "cn_text": "早点开打，早点收工",
+    "jp_file": "Cielle_BPCHAR_069_JP.mp3",
+    "jp_text": "ちゃちゃっと片付けて早く帰ろう!"
+  },
+  "idle3": {
+    "cn_file": "Cielle_BPCHAR_070_CN.mp3",
+    "cn_text": "哦，我是不是忘记说子弹也算钱？",
+    "jp_file": "Cielle_BPCHAR_070_JP.mp3",
+    "jp_text": "あ、ちなみに玉代もちゃっかり経費ね"
+  },
+  "sleep": {
+    "cn_file": "Cielle_BPCHAT_136_CN.mp3",
+    "cn_text": "我先飘一会儿",
+    "jp_file": "Cielle_BPCHAT_136_JP.mp3",
+    "jp_text": "ちょっと飛んでくる"
+  },
+  "yes": {
+    "cn_file": "Cielle_COM_086_CN.mp3",
+    "cn_text": "对的对的",
+    "jp_file": "Cielle_COM_086_JP.mp3",
+    "jp_text": "それそれ"
+  },
+  "no": {
+    "cn_file": "Cielle_COM_087_CN.mp3",
+    "cn_text": "不对不对",
+    "jp_file": "Cielle_COM_087_JP.mp3",
+    "jp_text": "違う違う"
+  },
+  "love": {
+    "cn_file": "Cielle_COM_085_CN.mp3",
+    "cn_text": "你是我的偶像",
+    "jp_file": "Cielle_COM_085_JP.mp3",
+    "jp_text": "サンパン?あんたマジ神!"
+  }
+}
